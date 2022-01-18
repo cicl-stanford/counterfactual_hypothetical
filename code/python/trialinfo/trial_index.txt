@@ -1,0 +1,20 @@
+Here's a supplementary index describing how each trial looks like in animation
+* trials info stored in hyp_count_trials.json file
+* this index is used to create the eight video clips
+
+    trials 0-3 for Caused cases
+trial_0: brick (middle --> top)
+trial_1: brick fixed in the middle
+trial_2: brick (top --> middle)
+trial_3: brick fixed at the top
+
+    trials 4-7 for Prevented cases
+trial_4: brick (middle --> top)
+trial_5: brick fixed in the middle
+trial_6: brick (top --> middle)
+trial_7: brick fixed at the top
+
+
+  trials 8-9 for Practice cases at beginning of experiment
+trial_8: brick (top --> middle) + Ball A (top right) + Ball B (bottom right)
+trial_9: brick fixed at the top + Ball A (bottom right) + Ball B (top right)

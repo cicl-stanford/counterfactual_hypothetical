@@ -1,0 +1,718 @@
+---
+title: "Hypotheticals vs. counterfactuals"
+author: "Tobias Gerstenberg"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  bookdown::html_document2:
+    toc: true
+    toc_depth: 4
+    theme: cosmo
+    highlight: tango
+---
+
+# Load packages 
+
+```{r, message=F}
+library("RSQLite")
+library("tidyjson")
+library("knitr")
+library("png")
+library("grid")
+library("kableExtra")
+library("DT")
+library("lme4")
+library("broom.mixed")
+library("brms")
+library("xtable")
+library("emmeans")
+library("tidyverse")
+```
+
+# Set options 
+
+```{r}
+theme_set(theme_classic() + 
+    theme(text = element_text(size = 24)))
+
+opts_chunk$set(comment = "",
+               fig.show = "hold")
+
+# suppress grouping warning 
+options(dplyr.summarise.inform = F)
+
+# set default color scheme in ggplot 
+options(ggplot2.discrete.color = RColorBrewer::brewer.pal(9,"Set1"))
+options(ggplot2.discrete.fill = RColorBrewer::brewer.pal(9,"Set1"))
+```
+
+# Helper functions
+
+```{r}
+# function for printing out html or latex tables 
+print_table = function(data, format = "html", digits = 2){
+  if(format == "html"){
+    data %>% 
+      kable(digits = digits) %>% 
+      kable_styling()
+  }else if(format == "latex"){
+    data %>% 
+      xtable(digits = digits,
+             caption = "Caption",
+             label = "tab:table") %>%
+      print(include.rownames = F,
+            booktabs = T,
+            sanitize.colnames.function = identity,
+            caption.placement = "top")
+  }
+}
+
+# function for RMSE 
+rmse = function(x, y){
+  sqrt(mean((x - y)^2))
+}
+
+# extract means and credible intervals from brms model fit
+func_brms_params = function(fit, name){
+  fit %>% 
+    tidy(effects = "fixed",
+         fix.intercept = F,
+         conf.method = "HPDinterval") %>% 
+    select(term, estimate, contains("conf")) %>% 
+    mutate(across(-term, ~ round(., 2)),
+           estimate = str_c(estimate, " [", conf.low, ", ", conf.high, "]")) %>% 
+    select(term, estimate) %>% 
+    pivot_wider(names_from = term,
+                values_from = estimate) %>% 
+    mutate(name = name) %>% 
+    relocate(name)
+}
+```
+
+# Data 
+
+## Read in data 
+
+Restuls from experiment 1 (causal judgment), experiment 2 (counterfactual judgment) and experiment 3 (hypothetical judgment).  
+
+```{r}
+# read in data 
+con = dbConnect(SQLite(), dbname = "../../data/experiments_anonymized.db");
+df.data = dbReadTable(con, "hypothetical_counterfactual")
+dbDisconnect(con)
+
+# filter out incompletes 
+df.data = df.data %>% 
+  filter(status %in% 3:5) %>%
+  filter(codeversion %in% c("experiment_1", "experiment_2", "experiment_3"))
+
+# demographics 
+df.demographics = df.data$datastring %>% 
+  spread_values(age = jstring("questiondata", "age"),
+                gender = jstring("questiondata", "gender"),
+                race = jstring("questiondata", "race"),
+                ethnicity = jstring("questiondata", "ethnicity"),
+                feedback = jstring("questiondata", "feedback")) %>% 
+  bind_cols(df.data %>% select(codeversion)) %>% 
+  as_tibble() %>% 
+  rename(participant = document.id,
+         condition = codeversion) %>% 
+  mutate(time = difftime(df.data$endhit,
+                         df.data$beginhit,
+                         units = "mins"),
+         condition = factor(condition,
+                            levels = str_c("experiment_", 1:3),
+                            labels = c("causal", "counterfactual", "hypothetical")),
+         age = as.numeric(age))
+
+# main data 
+df.long = df.data$datastring %>% 
+  as.tbl_json() %>% 
+  enter_object("data") %>%
+  gather_array("order") %>% 
+  enter_object("trialdata") %>% 
+  gather_object("index") %>% 
+  append_values_string("value") %>% 
+  as_tibble() %>% 
+  rename(participant = document.id) %>% 
+  pivot_wider(names_from = index,
+              values_from = value) %>% 
+  rename(clip = id,
+         outcome = gate_pass,
+         rating = response) %>% 
+  mutate(across(.cols = c(outcome, rating, replay_times, time),
+                .fns = ~ as.numeric(.))) %>% 
+  mutate(time = time / 1000) %>% 
+  select(participant, clip, order, outcome, replay_times, time, rating) %>% 
+  filter(!clip %in% c("p1", "p2")) %>% 
+  mutate(clip = factor(clip, levels = 1:8),
+         outcome = factor(outcome,
+                          levels = c(1, 0),
+                          labels = c("ball B went in", "ball B missed"))) %>% 
+  arrange(participant, clip) %>% 
+  left_join(df.demographics %>% 
+              select(participant, condition),
+            by = "participant") %>% 
+  mutate(condition = factor(condition,
+                            levels = c("causal", "hypothetical", "counterfactual")))
+
+# filter participants for whom more than 10 clips were incorrectly shown 
+# (5 participants total) 
+df.long = df.long %>% 
+  group_by(participant) %>% 
+  filter(max(order) <= 10) %>% 
+  ungroup()
+```
+
+## Trial information 
+
+```{r}
+df.trialinfo = tibble(clip = 1:8,
+                      blocked_initial = c(1, 1, 0, 0, 1, 1, 0, 0),
+                      blocked_final = c(0, 1, 1, 0, 0, 1, 1, 0)) %>% 
+  mutate(block_moved = (blocked_initial != blocked_final)*1,
+         across(everything(), ~ as.factor(.)))
+```
+
+## Model predictions
+
+```{r}
+# noise simulations 
+df.noise_simulations = read.csv("data/grid_search.csv") %>% 
+  rename(ball_noise = unoise,
+         brick_noise = bnoise) %>% 
+  select(-X)
+
+# predictions for best fitting parameters
+df.model = read.csv("data/model_predictions.csv") %>% 
+  rename(clip = X) %>% 
+  mutate(clip = clip + 1,
+         clip = as.character(clip),
+         across(c(hypothetical, counterfactual),
+                ~ . * 100))
+
+df.model.ball_only = read.csv("data/model_predictions_ball_only.csv") %>% 
+  rename(clip = X) %>% 
+  mutate(clip = clip + 1,
+         clip = as.character(clip),
+         across(c(hypothetical, counterfactual),
+                ~ . * 100))
+
+df.model.brick_only = read.csv("data/model_predictions_brick_only.csv") %>% 
+  rename(clip = X) %>% 
+  mutate(clip = clip + 1,
+         clip = as.character(clip),
+         across(c(hypothetical, counterfactual),
+                ~ . * 100))
+```
+
+
+# Experiment 1: Hypothetical and counterfactual judgments 
+
+## Stats 
+
+### Demographics 
+
+```{r}
+df.tmp = df.long %>% 
+  filter(condition != "causal") %>% 
+  distinct(participant, condition) %>% 
+  left_join(df.demographics,
+            by = c("participant", "condition"))
+# age & time
+df.tmp %>% 
+  summarize(age_mean = mean(age),
+            age_sd = sd(age),
+            n = n(),
+            time_mean = mean(time),
+            time_sd = sd(time)) %>% 
+  mutate(across(contains("age"), ~ round(.)),
+         across(contains("time"), ~ round(., 1))) %>% 
+  pivot_longer(cols = everything(),
+               values_transform = list(value = as.character)) 
+
+# condition
+df.tmp %>% 
+  count(condition)
+
+# gender
+df.tmp %>% 
+  count(gender)
+
+# race
+df.tmp %>% 
+  count(race)
+
+# ethnicity
+df.tmp %>% 
+  count(ethnicity)
+```
+
+### Feedback 
+
+```{r}
+df.long %>% 
+  filter(condition != "causal") %>% 
+  distinct(participant, condition) %>% 
+  left_join(df.demographics,
+            by = c("participant", "condition")) %>% 
+  select(participant, condition, feedback) %>% 
+  datatable()
+```
+
+### Noise parameter search 
+
+#### Save means from hypothetical and counterfactual condition
+
+```{r, eval=FALSE}
+df.means = df.long %>% 
+  group_by(condition, clip) %>% 
+  summarize(rating = mean(rating)) %>% 
+  ungroup()
+
+# write csv with means from hypothetical and counterfactual condition 
+df.means %>% 
+  filter(condition != "causal") %>% 
+  pivot_wider(names_from = condition, 
+              values_from = rating) %>% 
+  rename(human_cf = counterfactual, 
+         human_hp = hypothetical) %>% 
+  write.csv(file = str_c("../python/data/", "hpcf_means.csv"))
+```
+
+#### Best parameters
+
+```{r}
+# model with both parameters
+df.param.both = df.noise_simulations %>% 
+  filter(loss == min(loss)) %>% 
+  mutate(name = "both")
+
+# model with only ball noise
+df.param.ball = df.noise_simulations %>% 
+  filter(brick_noise == 0) %>% 
+  filter(loss == min(loss)) %>% 
+  mutate(name = "ball only")
+
+# model with only brick noise
+df.param.brick = df.noise_simulations %>% 
+  filter(ball_noise == 0) %>% 
+  filter(loss == min(loss)) %>% 
+  mutate(name = "brick only")
+
+bind_rows(df.param.ball,
+          df.param.brick,
+          df.param.both) %>% 
+  relocate(name) %>% 
+  print_table()
+```
+### Regression 
+
+```{r}
+df.regression = df.long %>% 
+  filter(condition != "causal") %>% 
+  left_join(df.trialinfo,
+            by = "clip") %>% 
+  mutate(outcome = factor(outcome,
+                          levels = c("ball B missed", "ball B went in"),
+                          labels = c("miss", "hit")),
+         across(contains("blocked"), ~ as.factor(.)),
+         across(c(contains("blocked"), outcome), ~ C(., sum))) # sum contrasts
+ 
+fit_hypothetical = brm(formula = rating ~ 1 + blocked_initial + 
+                           blocked_final +
+                           outcome + 
+                           (1 | participant),
+     data = df.regression %>% 
+       filter(condition == "hypothetical"),
+     file = "cache/fit_hypothetical",
+     seed = 1)
+
+fit_counterfactual = brm(formula = rating ~ 1 + blocked_initial + 
+                           blocked_final +
+                           outcome + 
+                           (1 | participant),
+     data = df.regression %>% 
+       filter(condition == "counterfactual"),
+     file = "cache/fit_counterfactual",
+     seed = 1)
+```
+
+### Model comparison
+
+#### Overall
+
+```{r}
+df.long %>% 
+  filter(condition != "causal") %>% 
+  group_by(condition,
+           outcome,
+           clip) %>% 
+  summarize(rating = mean(rating)) %>% 
+  ungroup() %>% 
+  left_join(df.model %>% 
+              pivot_longer(cols = -clip, 
+                           names_to = "condition",
+                           values_to = "prediction"),
+            by = c("clip", "condition")) %>% 
+  summarize(r = cor(rating, prediction),
+            rs = cor(rating, prediction, method = "spearman"),
+            rmse = rmse(rating, prediction)) %>% 
+  mutate(across(.fns = ~ round(., 2))) %>% 
+  print_table()
+```
+
+#### Separated by condition 
+
+```{r}
+df.long %>% 
+  filter(condition != "causal") %>% 
+  group_by(condition,
+           outcome,
+           clip) %>% 
+  summarize(rating = mean(rating)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = condition,
+              values_from = rating) %>% 
+  rename_with(.cols = c(hypothetical, counterfactual),
+              .fn = ~ str_c(., "_rating")) %>% 
+  left_join(df.model %>% 
+              rename_with(.cols = c(hypothetical, counterfactual),
+              .fn = ~ str_c(., "_model")),
+            by = "clip") %>% 
+  summarize(r.hypothetical = cor(hypothetical_rating, hypothetical_model),
+            r.counterfactual = cor(counterfactual_rating, counterfactual_model),
+            rs.hypothetical = cor(hypothetical_rating, hypothetical_model,
+                                  method = "spearman"),
+            rs.counterfactual = cor(counterfactual_rating, counterfactual_model,
+                                    method = "spearman"),
+            rmse.hypothetical = rmse(hypothetical_rating, hypothetical_model),
+            rmse.counterfactual = rmse(counterfactual_rating, counterfactual_model)) %>% 
+  mutate(across(.fns = ~ round(., 2))) %>% 
+  pivot_longer(cols = everything(), 
+               names_to = c("measure", "comparison"),
+               names_sep = "\\.") %>% 
+  pivot_wider(names_from = measure,
+              values_from = value) %>% 
+  print_table()
+```
+
+## Plots 
+
+### Hypothetical and counterfactual judgments vs. model predictions 
+
+```{r fig.height=6, fig.width=8}
+set.seed(1)
+
+df.plot = df.long %>% 
+  filter(condition %in% c("counterfactual", "hypothetical")) %>% 
+  mutate(outcome = factor(outcome, levels = c("ball B went in", "ball B missed")))
+
+df.plot2 = df.model %>%
+# df.plot2 = df.model.ball_only %>% 
+# df.plot2 = df.model.brick_only %>% 
+  pivot_longer(cols = -clip,
+               names_to = "condition",
+               values_to = "rating") %>% 
+  mutate(outcome = ifelse(clip <= 4, "ball B went in", "ball B missed"),
+         outcome = factor(outcome, levels = c("ball B went in","ball B missed")),
+         condition = factor(condition, levels = c("hypothetical", "counterfactual"))) %>% 
+  mutate(clip = factor(clip))
+
+p = ggplot(data = df.plot,
+           mapping = aes(x = clip, 
+                         y = rating,
+                         fill = condition)) +
+  stat_summary(fun = "mean",
+               geom = "bar",
+               position = position_dodge(width = 0.9),
+               color = "black",
+               alpha = 0.5) + 
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "linerange",
+               position = position_dodge(width = 0.9),
+               size = 1.5) + 
+  geom_point(data = df.plot2,
+             shape = 21,
+             position = position_dodge(0.9),
+             size = 4,
+             show.legend = F) + 
+  facet_grid(cols = vars(outcome),
+             scales = "free") +
+  ylab("mean rating") + 
+  scale_y_continuous(breaks = seq(0, 100, 25),
+                     labels = seq(0, 100, 25),
+                     expand = c(0, 0)) + 
+  scale_fill_brewer(palette = "Set1",
+                    direction = -1) + 
+  coord_cartesian(clip = "off",
+                  ylim = c(0, 100)) + 
+  theme(legend.position = "bottom",
+        legend.margin = margin(t = 2.8, unit = "cm"),
+        legend.background = element_blank(),
+        axis.title.x = element_blank()) 
+    
+  
+# add images of bricks as x-axis labels  
+g = list()
+image_names = c("down_up", "down", "up_down", "up")
+
+for(i in 1:length(image_names)){
+  img = readPNG(str_c("../../figures/diagrams/blocks/", image_names[i], ".png"))
+  g[[i]] = rasterGrob(img, interpolate = TRUE)
+  
+  p = p +
+    annotation_custom(grob = g[[i]],
+                      xmin = i - 1,
+                      xmax = i + 1,
+                      ymin = -40,
+                      ymax = -10)
+}
+print(p)
+
+ggsave(filename = str_c("../../figures/plots/", 
+                        "hypothetical_counterfactual_judgments.pdf"),
+       plot = p,
+       width = 8,
+       height = 6)
+```
+
+### Noise parameters
+
+```{r}
+ggplot(data = df.noise_simulations,
+       mappin = aes(x = ball_noise, y = brick_noise)) +
+  geom_tile(aes(fill = loss),
+            color = "black") +
+  scale_fill_gradient(low = "white", high = "black") + 
+  coord_cartesian(expand = F) +
+  scale_x_continuous(breaks = seq(0, 1.2, 0.2)) + 
+  labs(x = expression("ball motion noise"~sigma["ball"]),
+       y = expression("block movement noise"~~sigma["block"]))
+  
+ggsave(filename = "../../figures/plots/parameter_search.pdf",
+       width = 8,
+       height = 6)
+```
+
+## Tables
+
+```{r, warning=F}
+func_brms_params(fit_hypothetical, "hypothetical") %>% 
+  bind_rows(func_brms_params(fit_counterfactual, "counterfactual")) %>% 
+  rename(intercept = Intercept,
+         block_initial = blocked_initial1,
+         block_final = blocked_final1,
+         outcome = outcome1) %>% 
+  print_table()
+```
+
+# Experiment 2: Causal judgments 
+
+## Stats 
+
+### Demographics 
+
+```{r}
+df.tmp = df.long %>% 
+  filter(condition == "causal") %>% 
+  distinct(participant, condition) %>% 
+  left_join(df.demographics,
+            by = c("participant", "condition"))
+
+# condition
+df.tmp %>% 
+  count(condition)
+
+# age & time
+df.tmp %>% 
+  summarize(age_mean = mean(age),
+            age_sd = sd(age),
+            n = n(),
+            time_mean = mean(time),
+            time_sd = sd(time)) %>% 
+  mutate(across(contains("age"), ~ round(.)),
+         across(contains("time"), ~ round(., 1))) %>% 
+  pivot_longer(cols = everything(),
+               values_transform = list(value = as.character)) 
+
+# gender
+df.tmp %>% 
+  count(gender)
+
+# ethnicity
+df.tmp %>% 
+  count(ethnicity)
+```
+
+### Feedback 
+
+```{r}
+df.long %>% 
+  filter(condition == "causal") %>% 
+  distinct(participant, condition) %>% 
+  left_join(df.demographics,
+            by = c("participant", "condition")) %>% 
+  select(participant, condition, feedback) %>% 
+  datatable()
+```
+
+### Regression 
+
+```{r}
+df.regression = df.long %>% 
+  filter(condition == "causal") %>% 
+  left_join(df.trialinfo,
+            by = "clip") %>% 
+  mutate(outcome = factor(outcome,
+                          levels = c("ball B missed", "ball B went in"),
+                          labels = c("miss", "hit"))) %>% 
+  mutate(across(contains("blocked"), ~ as.factor(.)),
+         across(c(contains("blocked"), outcome), ~ C(., sum))) # setting sum contrasts
+ 
+fit_causal = brm(formula = rating ~ 1 + (blocked_initial + 
+                           blocked_final) *
+                           outcome + 
+                           (1 | participant),
+     data = df.regression,
+     file = "cache/fit_causal",
+     seed = 1)
+
+fit_causal
+```
+
+### Model comparison
+
+```{r}
+df.means = df.long %>% 
+  group_by(condition,
+           outcome,
+           clip) %>% 
+  summarize(rating = mean(rating)) %>% 
+  ungroup() %>% 
+  mutate(rating = ifelse(condition != "causal" & 
+                             outcome == "ball B went in",
+                         100 - rating,
+                         rating)) %>% 
+  pivot_wider(names_from = condition,
+              values_from = rating)
+
+df.means %>% 
+  summarize(r.causal_hypothetical = cor(causal, hypothetical),
+            r.causal_counterfactual = cor(causal, counterfactual),
+            rs.causal_hypothetical = cor(causal, hypothetical, method = "spearman"),
+            rs.causal_counterfactual = cor(causal, counterfactual, method = "spearman"),
+            rmse.causal_hypothetical = rmse(causal, hypothetical),
+            rmse.causal_counterfactual = rmse(causal, counterfactual)) %>% 
+  mutate(across(.fns = ~ round(., 2))) %>% 
+  pivot_longer(cols = everything(), 
+               names_to = c("measure", "comparison"),
+               names_sep = "\\.") %>% 
+  pivot_wider(names_from = measure,
+              values_from = value) %>% 
+  print_table()
+```
+
+## Plots 
+
+### Causal judgments
+
+```{r fig.height=6, fig.width=8, warning=FALSE, message=FALSE}
+set.seed(1)
+
+df.plot = df.long %>% 
+  filter(condition == "causal") %>% 
+  mutate(outcome = factor(outcome, levels = c("ball B went in", "ball B missed")))
+
+p = ggplot(data = df.plot,
+           mapping = aes(x = clip,
+                         y = rating)) +
+  stat_summary(fun = "mean",
+               geom = "bar",
+               color = "black",
+               fill = "gray90") +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "linerange",
+               color = "black",
+               size = 1.5) +
+  stat_summary(data = df.long %>% 
+                 filter(condition == "hypothetical") %>% 
+                 mutate(rating = ifelse(outcome == "ball B went in", 100 - rating, rating)),
+               fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               aes(fill = "hypothetical"),
+               position = position_nudge(x = -0.2),
+               shape = 21,
+               size = 1,
+               fatten = 5,
+               stroke = 1) + 
+  stat_summary(data = df.long %>%
+                 filter(condition == "counterfactual") %>%
+                 mutate(rating = ifelse(outcome == "ball B went in", 100 - rating, rating)),
+               fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               aes(fill = "counterfactual"),
+               position = position_nudge(x = 0.2),
+               shape = 21,
+               size = 1,
+               fatten = 5,
+               stroke = 1) +
+  facet_grid(cols = vars(outcome),
+             scales = "free") +
+  labs(y = "mean causal rating",
+       fill = "model prediction") + 
+  scale_y_continuous(breaks = seq(0, 100, 25),
+                     labels = seq(0, 100, 25),
+                     expand = c(0, 0)) + 
+  scale_fill_manual(values = c("hypothetical" = "#377eb8",
+                               "counterfactual" = "#e41a1c")) +
+  coord_cartesian(clip = "off",
+                  ylim = c(0, 100)) + 
+  theme(legend.position = "bottom",
+        legend.margin = margin(t = 2.8, unit = "cm"),
+        legend.background = element_blank(),
+        axis.title.x = element_blank()) 
+
+# add images of bricks as x-axis labels  
+g = list()
+image_names = c("down_up", "down", "up_down", "up")
+
+for(i in 1:length(image_names)){
+  img = readPNG(str_c("../../figures/diagrams/blocks/", image_names[i], ".png"))
+  g[[i]] = rasterGrob(img, interpolate = TRUE)
+  
+  p = p +
+    annotation_custom(grob = g[[i]],
+                      xmin = i - 1,
+                      xmax = i + 1,
+                      ymin = -40,
+                      ymax = -10)
+}
+
+print(p)
+
+ggsave(filename = "../../figures/plots/causal_ratings_all.pdf",
+       plot = p,
+       width = 8,
+       height = 6)
+```
+
+## Tables
+
+### brms
+
+```{r, warning=F}
+func_brms_params(fit_causal, "causal") %>% 
+  rename(intercept = Intercept,
+         block_initial = blocked_initial1,
+         block_final = blocked_final1,
+         outcome = outcome1,
+         `block_initial:outcome` = `blocked_initial1:outcome1`,
+         `block_final:outcome` = `blocked_final1:outcome1`) %>% 
+  print_table()
+```
+
+# Session info
+
+```{r, echo=F}
+sessionInfo()
+```

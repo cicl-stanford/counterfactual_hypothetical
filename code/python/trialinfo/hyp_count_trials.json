@@ -1,0 +1,473 @@
+[
+	{
+		"trial": 0,
+		"balls": [
+			{
+				"name": "A",
+				"position": [
+					950,
+					590
+				],
+				"velocity": [
+					-0.165,
+					-0.115
+				]
+			},
+			{
+				"name": "B",
+				"position": [
+					900,
+					300
+				],
+				"velocity": [
+					-0.145,
+					0
+				]
+			}
+		],
+		"bricks": [
+			{
+				"name": "brick1",
+				"orientation": 0,
+				"position": [
+					150,
+					300
+				],
+				"velocity": [
+					0,
+					0.6
+				],
+				"step": 280,
+				"sensor_pos": [
+					150,
+					550
+				]
+			}
+		]
+	},
+
+
+	{
+		"trial": 1,
+		"balls": [
+			{
+				"name": "A",
+				"position": [
+					950,
+					590
+				],
+				"velocity": [
+					-0.165,
+					-0.115
+				]
+			},
+			{
+				"name": "B",
+				"position": [
+					900,
+					300
+				],
+				"velocity": [
+					-0.145,
+					0
+				]
+			}
+		],
+		"bricks": [
+			{
+				"name": "brick1",
+				"orientation": 0,
+				"position": [
+					150,
+					300
+				],
+				"velocity": [
+					0,
+					0.6
+				],
+				"step": 800,
+				"sensor_pos": [
+					150,
+					550
+				]
+			}
+		]
+	},
+
+
+	{
+		"trial": 2,
+		"balls": [
+			{
+				"name": "A",
+				"position": [
+					950,
+					590
+				],
+				"velocity": [
+					-0.165,
+					-0.115
+				]
+			},
+			{
+				"name": "B",
+				"position": [
+					900,
+					300
+				],
+				"velocity": [
+					-0.145,
+					0
+				]
+			}
+		],
+		"bricks": [
+			{
+				"name": "brick1",
+				"orientation": 0,
+				"position": [
+					150,
+					500
+				],
+				"velocity": [
+					0,
+					-0.6
+				],
+				"step": 280,
+				"sensor_pos": [
+					150,
+					250
+				]
+			}
+		]
+	},
+
+	{
+		"trial": 3,
+		"balls": [
+			{
+				"name": "A",
+				"position": [
+					950,
+					590
+				],
+				"velocity": [
+					-0.165,
+					-0.115
+				]
+			},
+			{
+				"name": "B",
+				"position": [
+					900,
+					300
+				],
+				"velocity": [
+					-0.145,
+					0
+				]
+			}
+		],
+		"bricks": [
+			{
+				"name": "brick1",
+				"orientation": 0,
+				"position": [
+					150,
+					500
+				],
+				"velocity": [
+					0,
+					-0.6
+				],
+				"step": 800,
+				"sensor_pos": [
+					150,
+					250
+				]
+			}
+		]
+	},
+
+	{
+		"trial": 4,
+		"balls": [
+			{
+				"name": "A",
+				"position": [
+					900,
+					579
+				],
+				"velocity": [
+					-0.158,
+					-0.105
+				]
+			},
+			{
+				"name": "B",
+				"position": [
+					850,
+					300
+				],
+				"velocity": [
+					-0.145,
+					0
+				]
+			}
+		],
+		"bricks": [
+			{
+				"name": "brick1",
+				"orientation": 0,
+				"position": [
+					150,
+					300
+				],
+				"velocity": [
+					0,
+					0.6
+				],
+				"step": 290,
+				"sensor_pos": [
+					150,
+					550
+				]
+			}
+		]
+	},
+
+	{
+		"trial": 5,
+		"balls": [
+			{
+				"name": "A",
+				"position": [
+					900,
+					579
+				],
+				"velocity": [
+					-0.158,
+					-0.105
+				]
+			},
+			{
+				"name": "B",
+				"position": [
+					850,
+					300
+				],
+				"velocity": [
+					-0.145,
+					0
+				]
+			}
+		],
+		"bricks": [
+			{
+				"name": "brick1",
+				"orientation": 0,
+				"position": [
+					150,
+					300
+				],
+				"velocity": [
+					0,
+					0.6
+				],
+				"step": 800,
+				"sensor_pos": [
+					150,
+					550
+				]
+			}
+		]
+	},
+
+	{
+		"trial": 6,
+		"balls": [
+			{
+				"name": "A",
+				"position": [
+					900,
+					579
+				],
+				"velocity": [
+					-0.158,
+					-0.105
+				]
+			},
+			{
+				"name": "B",
+				"position": [
+					850,
+					300
+				],
+				"velocity": [
+					-0.145,
+					0
+				]
+			}
+		],
+		"bricks": [
+			{
+				"name": "brick1",
+				"orientation": 0,
+				"position": [
+					150,
+					480
+				],
+				"velocity": [
+					0,
+					-0.6
+				],
+				"step": 290,
+				"sensor_pos": [
+					150,
+					250
+				]
+			}
+		]
+	},
+
+	{
+		"trial": 7,
+		"balls": [
+			{
+				"name": "A",
+				"position": [
+					900,
+					579
+				],
+				"velocity": [
+					-0.158,
+					-0.105
+				]
+			},
+			{
+				"name": "B",
+				"position": [
+					850,
+					300
+				],
+				"velocity": [
+					-0.145,
+					0
+				]
+			}
+		],
+		"bricks": [
+			{
+				"name": "brick1",
+				"orientation": 0,
+				"position": [
+					150,
+					480
+				],
+				"velocity": [
+					0,
+					-0.6
+				],
+				"step": 800,
+				"sensor_pos": [
+					150,
+					250
+				]
+			}
+		]
+	},
+
+	{
+		"trial": 8,
+		"balls": [
+			{
+				"name": "A",
+				"position": [
+					950,
+					580
+				],
+				"velocity": [
+					-0.153,
+					-0.115
+				]
+			},
+			{
+				"name": "B",
+				"position": [
+					900,
+					100
+				],
+				"velocity": [
+					-0.155,
+					0.15
+				]
+			}
+		],
+		"bricks": [
+			{
+				"name": "brick1",
+				"orientation": 0,
+				"position": [
+					150,
+					500
+				],
+				"velocity": [
+					0,
+					-0.6
+				],
+				"step": 250,
+				"sensor_pos": [
+					150,
+					250
+				]
+			}
+		]
+	},
+	{
+		"trial": 9,
+		"balls": [
+			{
+				"name": "A",
+				"position": [
+					960,
+					50
+				],
+				"velocity": [
+					-0.130,
+					0.068
+				]
+			},
+			{
+				"name": "B",
+				"position": [
+					900,
+					550
+				],
+				"velocity": [
+					-0.125,
+					-0.080
+				]
+			}
+		],
+		"bricks": [
+			{
+				"name": "brick1",
+				"orientation": 0,
+				"position": [
+					150,
+					500
+				],
+				"velocity": [
+					0,
+					-0.6
+				],
+				"step": 850,
+				"sensor_pos": [
+					150,
+					250
+				]
+			}
+		]
+	}
+
+]

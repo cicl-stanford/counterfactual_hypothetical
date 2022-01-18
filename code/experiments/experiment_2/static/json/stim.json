@@ -1,0 +1,56 @@
+{
+	"practice": [
+		{
+			"id": "p1",
+			"name": "hyp_count_clip_9",
+			"gate_pass": 0
+		},
+		{
+			"id": "p2",
+			"name": "hyp_count_clip_10",
+			"gate_pass": 1
+		}
+	],
+	"stim": [
+		{
+			"id": 1,
+			"name": "hyp_count_clip_1",
+			"gate_pass": 1
+		},
+		{
+			"id": 2,
+			"name": "hyp_count_clip_2",
+			"gate_pass": 1
+		},
+		{
+			"id": 3,
+			"name": "hyp_count_clip_3",
+			"gate_pass": 1
+		},
+		{
+			"id": 4,
+			"name": "hyp_count_clip_4",
+			"gate_pass": 1
+		},
+		{
+			"id": 5,
+			"name": "hyp_count_clip_5",
+			"gate_pass": 0
+		},
+		{
+			"id": 6,
+			"name": "hyp_count_clip_6",
+			"gate_pass": 0
+		},
+		{
+			"id": 7,
+			"name": "hyp_count_clip_7",
+			"gate_pass": 0
+		},
+		{
+			"id": 8,
+			"name": "hyp_count_clip_8",
+			"gate_pass": 0
+		}
+	]
+}

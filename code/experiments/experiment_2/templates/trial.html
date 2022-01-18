@@ -1,0 +1,200 @@
+<!-- INSTRUCTIONS -->
+<div class="slide" id="instructions-training-1">
+    <h1>Instructions</h1>
+    <div class="blue">
+        <p>In this experiment, your task is to make judgments about video clips similar to the ones shown in Figure 1.</p> 
+
+        <p>In each clip, two balls, <b>ball A</b> and <b>ball B</b> , enter the scene from the right and <b>collide</b> with each other. In some of the clips, ball B ends up going through the red gate on the left (Figure 1, left), and in some of the clips ball B misses the gate (Figure 1, right).</p>
+ 
+        <p>There is also a <b>brown block</b> that may or may not move on a track. Here, in the left diagram of Figure 1, the brown block <b>moves</b> down from the initial position at the top; in the right diagram, the brown block <b>stays put</b> through out the video clip.</p>
+
+        <figure id="instruction_figure">
+        <img id="instruction_image" src="static/images/example.png" alt="Example">
+        <div class="spacer"></div>
+        <caption><b>Figure 1</b>:<br>
+          In the left diagram, ball B went through the gate and the block moved. <br>
+          In the right diagram, ball B didn't go through the gate and the block didn't move.</caption>
+        </figure>
+        <div class="spacer"></div>
+        
+        <hr>
+
+        <p><b>Your task</b>:</p>
+
+        <p>Your task is to make a judgment about what would have happened if something about the video clip had been different. Specifically, we will ask you <i>to what extent you agree with this statement:</i></p>
+
+        <p><b>"Ball B would have gone through the gate if ball A hadn't been there."</b></p>
+
+        <br>
+
+
+        <p><b>Procedure</b>:</p>
+
+        <p>We will show you a total of <b>10</b> video clips, and you will see each video clip <b>twice</b> before being asked to make your judgment.</p>
+
+        <hr>
+
+        <p>On the next slide, we will ask you a few comprehension check questions to make sure that you've understood how the experiment works.</p>
+ 
+        <p> When you are ready, please go ahead and click the <b>Start</b> button.</p>
+    </div>
+
+    <div class="continue">
+        <button type="button" class="next"><b>Start</b></button>
+    </div>
+</div>
+
+<!-- COMPREHENSION CHECK QUESTIONS -->
+<div class="slide" id="comprehension_check">
+  <h1>Check questions</h1>
+  <div class="blue">
+    <p><b>Question 1: Which one of the following statements will you be asked to evaluate?</b> 
+      <br/>
+      <br/>
+      <input class="demoQ" type="radio" name="statement" value="A"> Ball A would have gone through the gate if ball B hadn't been there.
+      <br/>
+      <input class="demoQ" type="radio" name="statement" value="B"> Ball B would have gone through the gate if ball A hadn't been there. 
+      <br/>
+      <input class="demoQ" type="radio" name="statement" value="C"> Ball C would have gone through the gate if ball A hadn't been there.
+      <br/>
+      <input class="demoQ" type="radio" name="statement" value="Any"> We may ask you about any of the above statements. 
+      <br/>
+  </p>
+    <br>
+ 
+    <p><b>Question 2: What is true about the brown block?</b>
+      <br/>
+      <br/>
+      <input class="demoQ" type="radio" name="block" value="A"> The brown block will always stay fixed. 
+      <br/>
+      <input class="demoQ" type="radio" name="block" value="B"> The brown block will always slide along the track. 
+      <br/>
+      <input class="demoQ" type="radio" name="block" value="C"> Depending on the scenario, the brown block may or may not slide along the track. 
+      <br/>
+      <input class="demoQ" type="radio" name="block" value="Any"> The brown block will disappear at some point of time in the video. 
+      <br/> 
+    </p>
+    <br>
+
+  </div>
+  <div class="continue">
+    <button type="button" class="next" id="comprehension">Continue</button>
+  </div>  
+</div>
+
+<!-- COMPREHENSION FAIL SCREEN -->
+<div class="slide" id="comprehension_check_fail">
+    <h1>Check questions feedback</h1>
+    <div class="blue">
+        <p>Unfortunately, you didn't answer the comprehension check questions correctly.</p>
+        <p>Please have another close look at the instructions! </p>
+    </div>
+    <div class="continue">
+        <button type="button" class="next" id="comprehension_fail">Continue</button>
+    </div>
+</div>
+
+
+<!-- PRETRIAL REMINDER -->
+<div class="slide" id="pretrial_reminder">
+    <h1>Congratulations!</h1>
+    <p>You have successfully passed the Comprehension Check!</p>
+    <hr>
+    <!-- <div class="blue">
+        <p>At the beginning of each trial, please <b>read the question statement</b> at the bottom of your screen. </p>
+        <p>Remember, you will be judging this statement:</p>
+        <p><b>" Ball B would have gone through the gate if ball A hadn't been there."</b></p>
+
+        <p>Please press 'Continue' to proceed.</p>
+    </div> -->
+    <br>
+    <div class="continue">
+        <button type="button" class="next" id="reminder_button">Continue</button>
+    </div>
+</div>
+
+
+<!-- TRIAL -->
+<div class="slide" id="trial">
+    <div id="progress">
+        <div id="progress-text">Progress</div>
+        <div id="indicator-container">
+            <div id="indicator-outer">
+                <div id="indicator-stage"></div>
+            </div>
+        </div>
+    </div>
+    <br/>
+    <hr>
+    <div id="stim">
+        <br/>
+        <div class="container">
+            <div class="video_container">
+                <video class="stim_video">
+                    <source src="" id="video_mp4">
+                    <source src="" id="video_webm">
+                </video>
+            </div>
+            <div class="choices_container">
+                <div id="prompt-text"><h3> To what extent do you agree with the following statement?</h3></div>
+                <div id="question"></div>
+                <div id="slider-container">
+                    <div class="slider"></div>
+                    <div id="s_label"></div>
+                    <br/>
+                </div>
+                <!-- <br> -->
+                <!-- <p class="stim_text"> <b>Note</b>: Please watch this video <b>twice</b> before answering the question.</p> -->
+                <p class="replay_text">Press <b>Replay</b> if you want to watch the video again. Press <b>Continue</b> once you've made your judgment.</p>
+                <div class="continue">
+                    <button type="button" class="next" id="play"></button>
+                    <button type="button" id="trial_next" class="next">Continue</button>
+                </div>
+                <br>
+                <hr>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- DEMOGRAPHICS -->
+<div class="slide" id="demographics">
+    <h1>Demographic information</h1>
+    <div class="blue">
+        <p>What factors influenced how you made your causal judgments? Do you have any comments regarding the experiment? </p>
+        <textarea name="feedback" style="width:760px; height:100px;font-size:20px;"></textarea>
+        <p><b>Please provide the following demographic information to complete the study</b>:</p>
+        <p><b>1.</b> Age:
+            <input class="demoQ numberQ" type="number" id="age_field" maxlength="3" name="age" min="18" max="100" step="1"> years
+            <input class="demoQ" type="checkbox" name="age" id="age_na" >Prefer not to say
+        </p>
+        <p><b>2.</b> Gender:
+            <input class="demoQ" type="radio" name="gender" value="female">Female
+            <input class="demoQ" type="radio" name="gender" value="male">Male
+            <input class="demoQ" type="radio" name="gender" value="non-binary">Non-Binary
+            <input class="demoQ" type="radio" name="gender" value="optout">Prefer not to say
+        </p>
+        <p><b>3.</b> Race:
+          <select class="demoQ dropdown" id="race" style="width: 200px; height: 28px; ">
+
+            <option value="NA" size="26"> ----------- N.A.----------- </option>
+            <option value="White" size="26">White (Europe/Middle East/North Africa)</option>
+            <option value="Asian" size="26">Asian (Far East/Southeast Asia)</option>
+            <option value="African" size="26">Black or African American</option>
+            <option value="Native" size="26">American Indian or Alaska Native</option>
+            <option value="Islander" size="26">Native Hawaiian/Pacific Islander</option>
+           
+          </select>
+          <input class="demoQ" type="checkbox" id="race_na">Prefer not to say
+        </p>
+        <p><b>4.</b> Ethnicity:
+            <input class="demoQ" type="radio" name="ethnicity" value="hispanic">Hispanic
+            <input class="demoQ" type="radio" name="ethnicity" value="non-hispanic">Non-Hispanic
+            <input class="demoQ" type="radio" name="ethnicity" value="optout">Prefer not to say
+            <br/>
+            <p>Please press Finish to complete the experiment.</p>
+    </div>
+    <div class="continue">
+        <button type="button" class="next" id="trial_finish">Finish</button>
+    </div>
+</div>
