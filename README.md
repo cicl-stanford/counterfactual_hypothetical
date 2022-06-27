@@ -43,7 +43,7 @@ Analysis and plotting script. You can view a rendered html file of the analysis 
 
 ### experiments
 
-The expeirments were programmed using [psiturk](https://psiturk.org/). Experiment 1 asked for causal judgments, Experiment 2 asked for counterfactual judgments, and Experiment 3 asked for hypothetical judgments. 
+The experiments were programmed using [psiturk](https://psiturk.org/). Experiment 1 asked for causal judgments, Experiment 2 asked for counterfactual judgments, and Experiment 3 asked for hypothetical judgments. 
 
 ### python
 
