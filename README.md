@@ -21,13 +21,7 @@ Materials for the paper "What would have happened? Counterfactuals, hypothetical
 ├── data
 ├── docs
 ├── figures
-│   ├── diagrams
-│   │   ├── afdesign
-│   │   ├── blocks
-│   │   ├── clips
-│   │   ├── keynote
-│   │   └── pdf
-│   ├── plots
+│   ├── paper
 │   └── screenshots
 │       ├── experiment_1
 │       ├── experiment_2
@@ -55,7 +49,7 @@ Contains anonymized database from all three experiments combined.
 
 ## figures
 
-All the diagrams and plots from the paper. 
+Figures from the paper, and experiment screenshots. 
 
 ## videos
 
